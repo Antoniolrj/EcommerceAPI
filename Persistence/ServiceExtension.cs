@@ -1,8 +1,10 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Authentication;
+using Application.Interfaces.Persistence;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Persistence.Authentication;
+using Persistence.Repositories;
 using Persistence.Services;
 
 
@@ -16,6 +18,7 @@ namespace Persistence
 
             services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
             services.AddSingleton<IDateTimeService, DataTimeService>();
+            services.AddScoped<IUserRepository, UserRepository>();
         }
     }
 }

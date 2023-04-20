@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Authentication;
+using Domain.Entities;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -10,7 +11,6 @@ namespace Persistence.Authentication
 {
     public class JwtTokenGenerator : IJwtTokenGenerator
     {
-
         private readonly JwtSettings _jwtSettings;
         private readonly IDateTimeService _dateTimeService;
 
@@ -20,7 +20,7 @@ namespace Persistence.Authentication
             _jwtSettings = jwtSettings.Value;
         }
 
-        public string GenerateToken(int userId, string firstName, string lastName)
+        public string GenerateToken(User user)
         {
             var siginingCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret)),
@@ -29,9 +29,9 @@ namespace Persistence.Authentication
 
             var claims = new[]
             {
-                new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-                new Claim(JwtRegisteredClaimNames.GivenName, firstName),
-                new Claim(JwtRegisteredClaimNames.FamilyName, lastName),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.GivenName, user.FirstName),
+                new Claim(JwtRegisteredClaimNames.FamilyName, user.LastName),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 

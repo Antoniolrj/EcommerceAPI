@@ -10,14 +10,15 @@ namespace Persistence.Repositories
 {
     public class UserRepository : IUserRepository
     {
+        private static readonly List<User> _users = new List<User>();
         public void Add(User user)
         {
-            throw new NotImplementedException();
+            _users.Add(user);
         }
 
         public User? GetUserByEmail(string email)
         {
-            throw new NotImplementedException();
+            return _users.SingleOrDefault(u => u.Email == email);
         }
     }
 }

@@ -1,33 +1,66 @@
-﻿using Application.Services.Authentication;
-using Contracts.Authentication;
+﻿using Contracts.Authentication;
+using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
+using Domain.Common.Errors;
+using Application.Services.Authentication.Commands;
+using Application.Services.Authentication.Common;
 
 namespace Api.Controllers
 {
-    [ApiController]
     [Route("[controller]")]
 
-    public class AuthenticationController : ControllerBase
+    public class AuthenticationController : ApiController
     {
-        private readonly IAuthenticationService _authenticationService; 
+        private readonly IAuthenticationCommandService _authenticationCommandService;
+        private readonly IAuthenticationQueryService _authenticationQueryService;
 
-        public AuthenticationController(IAuthenticationService authenticationService)
+
+        public AuthenticationController(IAuthenticationCommandService authenticationCommandService, IAuthenticationQueryService authenticationQueryService)
         {
-            _authenticationService = authenticationService;
+            _authenticationCommandService = authenticationCommandService;
+            _authenticationQueryService = authenticationQueryService;
         }
 
         [HttpPost("Register")]
         public IActionResult Register(RegisterRequest request)
         {
-            var authResult = _authenticationService.Register(request.FistName, request.LastName, request.Email, request.Password);
-            var authResponse = new AuthenticationResponse(authResult.user.Id, authResult.user.FirstName, authResult.user.LastName, authResult.user.Email, authResult.Token);
-            return Ok(authResponse);
+            ErrorOr<AuthenticationResult> authResult = _authenticationCommandService.Register(
+                request.FistName,
+                request.LastName,
+                request.Email,
+                request.Password);
+
+            return authResult.Match(
+                authResult => Ok(MapAuthResult(authResult)),
+                errors => Problem(errors));
         }
+
 
         [HttpPost("Login")]
         public IActionResult Login(LoginRequest request)
         {
-            return Ok(request);
+            var authResult = _authenticationQueryService.Login(request.Email, request.Password);
+
+            if (authResult.IsError && authResult.FirstError == Errors.Authentication.InvalidCredential)
+            {
+                return Problem(
+                    statusCode: StatusCodes.Status401Unauthorized, 
+                    title: authResult.FirstError.Description);
+            }   
+
+            return authResult.Match(
+                authResult => Ok(MapAuthResult(authResult)),
+                errors => Problem(errors));
+        }
+
+        private static AuthenticationResponse MapAuthResult(AuthenticationResult authResult)
+        {
+            return new AuthenticationResponse(
+                authResult.User.Id, 
+                authResult.User.FirstName, 
+                authResult.User.LastName, 
+                authResult.User.Email, 
+                authResult.Token);
         }
     }
 }
