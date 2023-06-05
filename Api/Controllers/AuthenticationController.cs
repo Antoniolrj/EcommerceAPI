@@ -3,7 +3,10 @@ using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using Domain.Common.Errors;
 using Application.Services.Authentication.Commands;
-using Application.Services.Authentication.Common;
+using MediatR;
+using Application.Common;
+using Application.Authentication.Commands.Register;
+using Application.Authentication.Queries;
 
 namespace Api.Controllers
 {
@@ -11,24 +14,23 @@ namespace Api.Controllers
 
     public class AuthenticationController : ApiController
     {
-        private readonly IAuthenticationCommandService _authenticationCommandService;
-        private readonly IAuthenticationQueryService _authenticationQueryService;
+        private readonly ISender _mediator;
 
-
-        public AuthenticationController(IAuthenticationCommandService authenticationCommandService, IAuthenticationQueryService authenticationQueryService)
+        public AuthenticationController(IMediator mediator)
         {
-            _authenticationCommandService = authenticationCommandService;
-            _authenticationQueryService = authenticationQueryService;
+            _mediator = mediator;
         }
 
         [HttpPost("Register")]
-        public IActionResult Register(RegisterRequest request)
+        public async Task<IActionResult> Register(RegisterRequest request)
         {
-            ErrorOr<AuthenticationResult> authResult = _authenticationCommandService.Register(
+            var command = new RegisterCommand(
                 request.FistName,
                 request.LastName,
                 request.Email,
                 request.Password);
+
+            ErrorOr<AuthenticationResult> authResult = await _mediator.Send(command);
 
             return authResult.Match(
                 authResult => Ok(MapAuthResult(authResult)),
@@ -37,9 +39,11 @@ namespace Api.Controllers
 
 
         [HttpPost("Login")]
-        public IActionResult Login(LoginRequest request)
+        public async Task<IActionResult> Login(LoginRequest request)
         {
-            var authResult = _authenticationQueryService.Login(request.Email, request.Password);
+            var query = new LoginQuery(request.Email, request.Password);
+
+            var authResult = await _mediator.Send(query);
 
             if (authResult.IsError && authResult.FirstError == Errors.Authentication.InvalidCredential)
             {

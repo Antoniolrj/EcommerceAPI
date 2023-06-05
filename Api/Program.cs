@@ -1,8 +1,8 @@
 using Api.Common.Errors;
 using Application;
+using Persistence;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 {

@@ -1,32 +1,34 @@
-﻿using Application.Interfaces.Authentication;
+﻿using Application.Common;
+using Application.Interfaces.Authentication;
 using Application.Interfaces.Persistence;
 using Domain.Common.Errors;
-using Domain.Entities;
 using ErrorOr;
+using MediatR;
 
-namespace Application.Services.Authentication.Commands
+
+namespace Application.Authentication.Queries
 {
-    public class AuthenticationQueryService : IAuthenticationQueryService
+    public class LoginQueryHandler : IRequestHandler<LoginQuery, ErrorOr<AuthenticationResult>>
     {
         private readonly IJwtTokenGenerator _jwtTokenGenerator;
         private readonly IUserRepository _userRepository;
 
-        public AuthenticationQueryService(IJwtTokenGenerator jwtTokenGenerator, IUserRepository userRepository)
+        public LoginQueryHandler(IJwtTokenGenerator jwtTokenGenerator, IUserRepository userRepository)
         {
             _jwtTokenGenerator = jwtTokenGenerator;
             _userRepository = userRepository;
         }
 
-        public ErrorOr<AuthenticationResult> Login(string email, string password)
+        public async Task<ErrorOr<AuthenticationResult>> Handle(LoginQuery query, CancellationToken cancellationToken)
         {
-            var user = _userRepository.GetUserByEmail(email);
+            var user = _userRepository.GetUserByEmail(query.Email);
 
             if (user is null)
             {
                 return Errors.Authentication.InvalidCredential;
             }
 
-            if (user.Password != password)
+            if (user.Password != query.Password)
             {
                 return Errors.Authentication.InvalidPassword;
             }
@@ -35,6 +37,5 @@ namespace Application.Services.Authentication.Commands
 
             return new AuthenticationResult(user, token);
         }
-
     }
 }
